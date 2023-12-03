@@ -81,6 +81,14 @@ int main() {
     printf("%s\n", header.session);
     printf("%u\n", header.type);
 
+    switch (header.type) {
+      case PACKET_INIT: {
+        PacketInit packet;
+        packet_parse_init(message, message_len, &packet);
+        break;
+      }
+    }
+
     close(new_socket);
   }
 
