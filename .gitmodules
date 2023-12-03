@@ -1,0 +1,3 @@
+[submodule "vendor/uuid4"]
+	path = vendor/uuid4
+	url = git@github.com:rxi/uuid4.git

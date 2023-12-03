@@ -1,3 +1,4 @@
+# Directories and common setup
 BIN_DIR := bin
 BUILD_DIR := build
 SERVER_BIN := $(BIN_DIR)/server
@@ -6,18 +7,23 @@ LIB_BIN := $(BUILD_DIR)/lib.a
 
 SERVER_BUILD := $(BUILD_DIR)/server
 CLIENT_BUILD := $(BUILD_DIR)/client
+
+LIB_SOURCE_DIR := lib/src
+LIB_INCLUDE := lib/include
 LIB_BUILD := $(BUILD_DIR)/lib
 
-LIB_INCLUDE := lib/include
+UUID4_DIR := vendor/uuid4
+UUID4_LIB := $(UUID4_DIR)/bin/uuid4.a
+UUID4_INCLUDE := $(UUID4_DIR)/include
 
 .PHONY: all
 all: $(SERVER_BIN) $(CLIENT_BIN)
 
 CC := gcc
-CFLAGS := -MMD -Wall -g -I$(LIB_INCLUDE) 
+CFLAGS := -MMD -Wall -g -I$(LIB_INCLUDE) -I$(UUID4_INCLUDE)
 
 
-LIB_SOURCE_DIR := lib/src
+# Utils lib that both server and client use
 LIB_SOURCES := $(shell find $(LIB_SOURCE_DIR) -type f -name "*.c")
 LIB_OBJECTS := $(patsubst $(LIB_SOURCE_DIR)/%.c,$(LIB_BUILD)/%.o,$(LIB_SOURCES))
 
@@ -28,12 +34,16 @@ $(LIB_OBJECTS): $(LIB_BUILD)/%.o: $(LIB_SOURCE_DIR)/%.c
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -c $< -o $@
 
+# UUID4
+$(UUID4_LIB):
+	@make -C $(UUID4_DIR)
 
+# The server program
 SERVER_SOURCE_DIR := server
 SERVER_SOURCES := $(shell find $(SERVER_SOURCE_DIR) -type f -name "*.c")
 SERVER_OBJECTS := $(patsubst $(SERVER_SOURCE_DIR)/%.c,$(SERVER_BUILD)/%.o,$(SERVER_SOURCES))
 
-$(SERVER_BIN): $(SERVER_OBJECTS) $(LIB_BIN) | $(BIN_DIR)
+$(SERVER_BIN): $(SERVER_OBJECTS) $(LIB_BIN) $(UUID4_LIB) | $(BIN_DIR)
 	$(CC) $^ -o $@
 
 $(SERVER_OBJECTS): $(SERVER_BUILD)/%.o: $(SERVER_SOURCE_DIR)/%.c
@@ -41,11 +51,12 @@ $(SERVER_OBJECTS): $(SERVER_BUILD)/%.o: $(SERVER_SOURCE_DIR)/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 
+# The client program
 CLIENT_SOURCE_DIR := client
 CLIENT_SOURCES := $(shell find $(CLIENT_SOURCE_DIR) -type f -name "*.c")
 CLIENT_OBJECTS := $(patsubst $(CLIENT_SOURCE_DIR)/%.c,$(CLIENT_BUILD)/%.o,$(CLIENT_SOURCES))
 
-$(CLIENT_BIN): $(CLIENT_OBJECTS) $(LIB_BIN) | $(BIN_DIR)
+$(CLIENT_BIN): $(CLIENT_OBJECTS) $(LIB_BIN) $(UUID4_LIB) | $(BIN_DIR)
 	$(CC) $(LFLAGS) $^ -o $@
 
 $(CLIENT_OBJECTS): $(CLIENT_BUILD)/%.o: $(CLIENT_SOURCE_DIR)/%.c
@@ -53,6 +64,7 @@ $(CLIENT_OBJECTS): $(CLIENT_BUILD)/%.o: $(CLIENT_SOURCE_DIR)/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 
+# Utility targets
 $(BIN_DIR):
 	@mkdir -p $@
 
@@ -63,6 +75,7 @@ clean:
 	@rm -rf $(BUILD_DIR)
 	@rm -rf $(BIN_DIR)
 	@rm -rf .cache
+	@make -C $(UUID4_DIR) clean
 	@if tmux has-session -t $(TMUX_SESSION) 2>/dev/null; then \
 		tmux kill-session -t $(TMUX_SESSION); \
 	fi

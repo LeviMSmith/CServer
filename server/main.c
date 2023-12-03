@@ -1,10 +1,14 @@
-#include "stdio.h"
+#include <stdio.h>
+#include <stdlib.h>
 
-#include "utils/uuid.h"
+#include "uuid4/uuid4.h"
 
 int main() {
-  char sessid[UTILS_SESSID_LEN];
-  utils_generate_sessid(sessid);
-  
-  printf("%s\n", sessid);
+  char uuid[UUID4_LEN];
+
+  uuid4_init();
+  uuid4_generate(uuid);
+  printf("%s\n", uuid);
+
+  return EXIT_SUCCESS;
 }
