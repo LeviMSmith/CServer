@@ -82,13 +82,13 @@ clean:
 
 .PHONY: run
 run: $(SERVER_BIN) $(CLIENT_BIN)
-	@if tmux has-session -t $(TMUX_SESSION) 2>/dev/null; then \
-		tmux kill-session -t $(TMUX_SESSION); \
-	fi
+	-tmux kill-session -t CServer 2>/dev/null || true
 	tmux new-session -d -s $(TMUX_SESSION) \; \
-  	split-window -h \; \
-  	split-window -v \; \
-  	send-keys -t $(TMUX_SESSION):0.0 $(SERVER_BIN) C-m \; \
-  	send-keys -t $(TMUX_SESSION):0.1 $(CLIENT_BIN) C-m \; \
-  	send-keys -t $(TMUX_SESSION):0.2 $(CLIENT_BIN) C-m
+		split-window -h \; \
+		split-window -v
+	tmux send-keys -t $(TMUX_SESSION):0.0 $(SERVER_BIN) C-m
+	sleep 0.5
+	tmux send-keys -t $(TMUX_SESSION):0.1 $(CLIENT_BIN) C-m
+	tmux send-keys -t $(TMUX_SESSION):0.2 $(CLIENT_BIN) C-m
 	tmux attach-session -t $(TMUX_SESSION)
+

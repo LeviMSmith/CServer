@@ -17,7 +17,7 @@ enum ServerMode: uint8_t {
   SERVER_MODE_FILE
 };
 
-const size_t MAX_TOTAL_PACKET_SIZE = 2048; // For buffers. It's much less than this.
+extern size_t MAX_TOTAL_PACKET_SIZE; // For buffers. It's much less than this.
 
 // Both
 typedef struct {
@@ -43,5 +43,6 @@ typedef struct {
 } PacketData;
 
 int packet_parse_header(char* message, int message_len, PacketHeader* header);
+int packet_serialize_header(char* message, PacketHeader* header);
 
 #endif // PACKETS_H_
