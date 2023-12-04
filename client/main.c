@@ -28,6 +28,7 @@ void echo(int socket, const char* input) {
   }
 
   int message_len = recv(socket, message, sizeof(message), 0);
+  printf("Message of len %d recieved\n", message_len);
   if (message_len == -1) {
     perror("recv");
     return;

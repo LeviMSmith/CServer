@@ -9,21 +9,6 @@
 
 #include "utils/packets.h"
 
-// The protocol:
-//   A normal client packet contains the server session
-//   and then a request. The request is a string that is parsed depending on
-//   a stateful mode for the client.
-//
-//   The server returns the session id and the request.
-//
-//   Create session:
-//     Client sends mode
-//     Server returns session id
-//
-//   Request:
-//     Client sends request
-//     Server returns data
-
 const uint16_t PORT = 4000;
 
 int send_buffer(int socket, const char* buffer, size_t buffer_size) {
@@ -33,7 +18,10 @@ int send_buffer(int socket, const char* buffer, size_t buffer_size) {
   size_t remaining = buffer_size;
   uint64_t segment = 0;
 
+  printf("sending\n");
   while (remaining > 0) {
+    printf("sending segment %lu\n", segment);
+
     size_t chunk_size = remaining > MAX_DATA_SIZE ? MAX_DATA_SIZE : remaining;
 
     packet_data.segment = segment;
@@ -42,8 +30,10 @@ int send_buffer(int socket, const char* buffer, size_t buffer_size) {
 
     packet_header.type = PACKET_DATA;
 
-    size_t packet_size = packet_serialize_header(packet, &packet_header);
-    packet_size += packet_serialize_data(packet + packet_size, &packet_data);
+    packet_serialize_header(packet, &packet_header);
+    packet_serialize_data(packet, &packet_data);
+
+    size_t packet_size = sizeof(PacketHeader) + sizeof(PacketData);
 
     // Send packet
     size_t total_sent = 0;
