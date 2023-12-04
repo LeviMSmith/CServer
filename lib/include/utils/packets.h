@@ -7,13 +7,13 @@
 #include <stdint.h>
 
 enum PacketType: uint8_t {
-  PACKET_INIT,
+  PACKET_INIT = 1,
   PACKET_REQUEST,
   PACKET_DATA
 };
 
 enum ServerMode: uint8_t {
-  SERVER_MODE_ECHO,
+  SERVER_MODE_ECHO = 1,
   SERVER_MODE_FILE
 };
 

@@ -44,11 +44,11 @@ SERVER_SOURCES := $(shell find $(SERVER_SOURCE_DIR) -type f -name "*.c")
 SERVER_OBJECTS := $(patsubst $(SERVER_SOURCE_DIR)/%.c,$(SERVER_BUILD)/%.o,$(SERVER_SOURCES))
 
 $(SERVER_BIN): $(SERVER_OBJECTS) $(LIB_BIN) $(UUID4_LIB) | $(BIN_DIR)
-	$(CC) `pkg-config --libs glib-2.0` $^ -o $@
+	$(CC) $^ -o $@
 
 $(SERVER_OBJECTS): $(SERVER_BUILD)/%.o: $(SERVER_SOURCE_DIR)/%.c
 	@mkdir -p $(dir $@)
-	$(CC) `pkg-config --cflags glib-2.0` $(CFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) -c $< -o $@
 
 # The client program
 CLIENT_SOURCE_DIR := client
