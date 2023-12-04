@@ -36,11 +36,15 @@ int main() {
   char message[MAX_TOTAL_PACKET_SIZE];
 
   PacketHeader header;
-  uuid4_init();
-  uuid4_generate(header.session); // Later we get this from the server
   header.type = PACKET_INIT;
+  // Doesn't matter what's in header.session
 
   packet_serialize_header(message, &header);
+
+  PacketInit init;
+  init.mode = SERVER_MODE_ECHO;
+
+  packet_serialize_init(message, &init);
 
   int n = send(sockfd, message, strlen(message), 0);
   if (n < 0) {
@@ -48,6 +52,15 @@ int main() {
     close(sockfd);
     return EXIT_FAILURE;
   }
+
+  int message_len = recv(sockfd, message, sizeof(message), 0);
+
+  packet_parse_header(message, message_len, &header);
+
+  char session[UUID4_LEN];
+  strcpy(session, header.session);
+
+  printf("Got session %s", session);
 
   close(sockfd);
 

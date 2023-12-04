@@ -6,6 +6,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <glib.h>
 
 #include "uuid4/uuid4.h"
 
@@ -64,6 +65,10 @@ int main() {
     return EXIT_FAILURE;
   }
 
+  uuid4_init();
+
+  GHashTable* sessions = g_hash_table_new(g_str_hash, g_str_equal);
+
   while (1) {
     int new_socket;
     if ((new_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t*)&addrlen)) < 0) {
@@ -85,7 +90,49 @@ int main() {
       case PACKET_INIT: {
         PacketInit packet;
         packet_parse_init(message, message_len, &packet);
+
+        char return_message[MAX_TOTAL_PACKET_SIZE];
+        PacketHeader header;
+        uuid4_generate(header.session);
+        header.type = PACKET_INIT;
+
+        packet_serialize_header(return_message, &header);
+
+        PacketInit given_init;
+        packet_parse_init(message, message_len, &given_init);
+
+        PacketInit return_init;
+        return_init.mode = given_init.mode;
+        
+        g_hash_table_insert(sessions, header.session, GINT_TO_POINTER(return_init.mode));
+
+        packet_serialize_init(return_message, &return_init);
+
+        send(new_socket, return_message, sizeof(PacketHeader) + sizeof(PacketInit), 0);
+        
         break;
+      }
+      case PACKET_REQUEST: {
+        PacketRequest request;
+        packet_parse_request(message, message_len, &request);
+
+        int lookup_int;
+        gpointer lookup_result = g_hash_table_lookup(sessions, header.session);
+        if (lookup_result != NULL) {
+          lookup_int = GPOINTER_TO_INT(lookup_result);
+          switch (lookup_int) {
+            case SERVER_MODE_ECHO:
+            case SERVER_MODE_FILE:
+              printf("Got valid request for session %s\n", header.session);
+              break;
+            default:
+              break;
+          }
+          // Parse request and execute
+        }
+        else {
+          break;
+        }
       }
     }
 
@@ -93,6 +140,8 @@ int main() {
   }
 
   close(server_fd);
+
+  free(sessions);
 
   return EXIT_SUCCESS;
 }
