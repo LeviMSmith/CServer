@@ -169,7 +169,7 @@ int main() {
                 break;
               }
               case SERVER_MODE_FILE: {
-                char full_path[1024];
+                char full_path[1031];
                 FILE* file;
                 char* buffer;
                 size_t file_length;
@@ -179,7 +179,7 @@ int main() {
                 file = fopen(full_path, "rb");
                 if (file == NULL) {
                   perror("Error opening file");
-                  return NULL;
+                  return -1;
                 }
 
                 fseek(file, 0, SEEK_END);
@@ -190,7 +190,7 @@ int main() {
                 if (buffer == NULL) {
                   perror("Error allocating memory");
                   fclose(file);
-                  return NULL;
+                  return -1;
                 }
 
                 fread(buffer, 1, file_length, file);

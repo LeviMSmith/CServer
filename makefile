@@ -66,7 +66,6 @@ clean:
 	@rm -rf $(BUILD_DIR)
 	@rm -rf $(BIN_DIR)
 	@rm -rf .cache
-	@make -C $(UUID4_DIR) clean
 	@if tmux has-session -t $(TMUX_SESSION) 2>/dev/null; then \
 		tmux kill-session -t $(TMUX_SESSION); \
 	fi

@@ -6,8 +6,39 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <stdbool.h>
 
 #include "utils/packets.h"
+
+void echo(int socket, const char* input) {
+  char message[MAX_TOTAL_PACKET_SIZE];
+
+  PacketHeader packet_header;
+  PacketRequest packet_request;
+  strcpy(packet_request.request, input);
+
+  packet_header.type = PACKET_REQUEST;
+
+  packet_serialize_header(message, &packet_header);
+  packet_serialize_request(message, &packet_request);
+
+  int n = send(socket, message, MAX_TOTAL_PACKET_SIZE, 0);
+  if (n < 0) {
+    perror("ERROR writing to socket");
+  }
+
+  int message_len = recv(socket, message, sizeof(message), 0);
+  if (message_len > 0) {
+    PacketData packet_data;
+
+    packet_parse_data(message, message_len, &packet_data);
+    printf("ECHO recieved: %s", packet_data.data);
+  }
+}
+
+void get_file(int socket, const char* input) {
+
+}
 
 int main() {
   int sockfd;
@@ -38,10 +69,31 @@ int main() {
 
   packet_serialize_header(message, &header);
 
-  PacketInit init;
-  init.mode = SERVER_MODE_ECHO;
+  enum ServerMode mode;
+  char input[256];
+  bool running = true;
 
-  packet_serialize_init(message, &init);
+  printf("Choose a mode:\n");
+  printf("1: Echo\n");
+  printf("2: File get\n");
+  printf("Enter your choice: ");
+  scanf("%i", (int*)&mode);
+
+  while (getchar() != '\n');
+  
+  if (mode != SERVER_MODE_ECHO && mode != SERVER_MODE_FILE) {
+    printf("Invalid mode selected: %d.\n", mode);
+    printf("Valid modes are %d and %d\n", SERVER_MODE_ECHO, SERVER_MODE_FILE);
+    return 1;
+  }
+
+  printf("You selected Mode %d\n", mode);
+  printf("Enter a string (type 'close' to exit):\n");
+
+  PacketInit packet_init;
+  packet_init.mode = mode;
+
+  packet_serialize_init(message, &packet_init);
 
   int n = send(sockfd, message, MAX_TOTAL_PACKET_SIZE, 0);
   if (n < 0) {
@@ -54,17 +106,20 @@ int main() {
 
   packet_parse_header(message, message_len, &header);
 
-  PacketRequest request;
-  strcpy(request.request, "hello");
+  while (running) {
+    printf("Input: ");
+    fgets(input, sizeof(input), stdin);
+    input[strcspn(input, "\n")] = 0; // Remove newline character
 
-  header.type = PACKET_REQUEST;
-
-  packet_serialize_header(message, &header);
-  packet_serialize_request(message, &request);
-
-  n = send(sockfd, message, MAX_TOTAL_PACKET_SIZE, 0);
-  if (n < 0) {
-    perror("ERROR writing to socket");
+    if (strcmp(input, "close") == 0) {
+      running = false;
+    } else {
+      if (mode == 1) {
+        echo(sockfd, input);
+      } else if (mode == 2) {
+        get_file(sockfd, input);
+      }
+    }
   }
 
   close(sockfd);
