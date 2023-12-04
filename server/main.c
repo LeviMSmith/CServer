@@ -14,7 +14,7 @@ const uint16_t PORT = 4000;
 int send_buffer(int socket, const char* buffer, size_t buffer_size) {
   PacketData packet_data;
   PacketHeader packet_header;
-  char packet[MAX_TOTAL_PACKET_SIZE];
+  char packet[MAX_TOTAL_PACKET_SIZE] = {0};
   size_t remaining = buffer_size;
   uint64_t segment = 0;
 
@@ -128,7 +128,7 @@ int main() {
             PacketInit packet;
             packet_parse_init(message, message_len, &packet);
 
-            char return_message[MAX_TOTAL_PACKET_SIZE];
+            char return_message[MAX_TOTAL_PACKET_SIZE] = {0};
             PacketHeader header;
             header.type = PACKET_INIT;
 
@@ -161,7 +161,7 @@ int main() {
                   break;
                 }
 
-                send_buffer(new_socket, request.request, strlen(request.request));
+                send_buffer(new_socket, request.request, sizeof(request.request));
 
                 break;
               }

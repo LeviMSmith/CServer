@@ -11,7 +11,7 @@
 #include "utils/packets.h"
 
 void echo(int socket, const char* input) {
-  char message[MAX_TOTAL_PACKET_SIZE];
+  char message[MAX_TOTAL_PACKET_SIZE] = {0};
 
   PacketHeader packet_header;
   PacketRequest packet_request;
@@ -27,6 +27,8 @@ void echo(int socket, const char* input) {
     perror("ERROR writing to socket");
   }
 
+  memset(message, 0, MAX_TOTAL_PACKET_SIZE);
+
   int message_len = recv(socket, message, sizeof(message), 0);
   printf("Message of len %d recieved\n", message_len);
   if (message_len == -1) {
@@ -38,10 +40,13 @@ void echo(int socket, const char* input) {
     return;
   }
 
-  PacketData packet_data;
+  PacketData* packet_data = malloc(sizeof(PacketData));
 
-  packet_parse_data(message, message_len, &packet_data);
-  printf("ECHO recieved: %s\n", packet_data.data);
+  packet_parse_data(message, message_len, packet_data);
+  printf("Data len %u\n", packet_data->data_len);
+  printf("ECHO recieved: %s\n", packet_data->data);
+
+  free(packet_data);
 }
 
 void get_file(int socket, const char* input) {
