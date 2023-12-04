@@ -7,8 +7,6 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-#include "uuid4/uuid4.h"
-
 #include "utils/packets.h"
 
 // The protocol:
@@ -96,7 +94,6 @@ int main() {
         PacketHeader header;
         packet_parse_header(message, message_len, &header);
         
-        printf("%s\n", header.session);
         printf("%u\n", header.type);
 
         switch (header.type) {
@@ -106,7 +103,6 @@ int main() {
 
             char return_message[MAX_TOTAL_PACKET_SIZE];
             PacketHeader header;
-            uuid4_generate(header.session);
             header.type = PACKET_INIT;
 
             packet_serialize_header(return_message, &header);
@@ -138,7 +134,6 @@ int main() {
                 break;
               }
               case SERVER_MODE_FILE: {
-                printf("Got valid request for session %s\n", header.session);
                 break;
               }
               default: {

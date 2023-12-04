@@ -9,8 +9,6 @@
 
 #include "utils/packets.h"
 
-#include "uuid4/uuid4.h"
-
 int main() {
   int sockfd;
   struct sockaddr_in serv_addr;
@@ -57,15 +55,9 @@ int main() {
 
   packet_parse_header(message, message_len, &header);
 
-  char session[UUID4_LEN];
-  strcpy(session, header.session);
-
-  printf("Got session %s\n", session);
-
   PacketRequest request;
   strcpy(request.request, "hello");
 
-  // session is still set
   header.type = PACKET_REQUEST;
 
   packet_serialize_header(message, &header);

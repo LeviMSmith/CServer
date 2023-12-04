@@ -1,5 +1,3 @@
-#include "uuid4/uuid4.h"
-
 #include "utils/packets.h"
 
 #include <netinet/in.h>
@@ -27,15 +25,13 @@ uint64_t htonll(uint64_t value) {
 
 // This is terrible for security 👍
 int packet_parse_header(const char* message, int message_len, PacketHeader* header) {
-  strncpy(header->session, message, UUID4_LEN); // Should copy over null terminator
-  header->type = message[UUID4_LEN + 1];
+  header->type = message[0];
 
   return 0;
 }
 
 int packet_serialize_header(char* message, const PacketHeader* header) {
-  strncpy(message, header->session, UUID4_LEN);
-  message[UUID4_LEN + 1] = (char)header->type;
+  message[0] = (char)header->type;
 
   return 0;
 }

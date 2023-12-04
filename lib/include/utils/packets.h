@@ -20,7 +20,6 @@ enum ServerMode: uint8_t {
 extern size_t MAX_TOTAL_PACKET_SIZE; // For buffers. It's much less than this.
 
 typedef struct {
-  char session[UUID4_LEN];
   enum PacketType type;
 } PacketHeader;
 
