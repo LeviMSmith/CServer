@@ -23,7 +23,7 @@ uint64_t htonll(uint64_t value) {
 
 // This is terrible for security 👍
 int packet_parse_header(const char* message, int message_len, PacketHeader* header) {
-  header->type = message[0];
+  header->type = (enum PacketType)message[0];
 
   return 0;
 }

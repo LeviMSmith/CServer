@@ -38,18 +38,22 @@ int send_buffer(int socket, const char* buffer, size_t buffer_size) {
 
     packet_data.segment = segment;
     packet_data.data_len = chunk_size;
-    strncpy(packet_data.data, (char *)buffer + (buffer_size - remaining), chunk_size);
+    memcpy(packet_data.data, buffer + (buffer_size - remaining), chunk_size);  // Use memcpy instead
 
     packet_header.type = PACKET_DATA;
 
-    packet_serialize_header(packet, &packet_header);
-    packet_serialize_data(packet, &packet_data);
+    size_t packet_size = packet_serialize_header(packet, &packet_header);
+    packet_size += packet_serialize_data(packet + packet_size, &packet_data);
 
     // Send packet
-    ssize_t sent = send(socket, packet, sizeof(PacketHeader) + 1 + sizeof(uint64_t) + sizeof(uint16_t) + chunk_size, 0);
-    if (sent == -1) {
-      perror("send");
-      return -1;
+    size_t total_sent = 0;
+    while (total_sent < packet_size) {
+      ssize_t sent = send(socket, packet + total_sent, packet_size - total_sent, 0);
+      if (sent == -1) {
+        perror("send");
+        return -1;
+      }
+      total_sent += sent;
     }
 
     remaining -= chunk_size;
@@ -58,6 +62,7 @@ int send_buffer(int socket, const char* buffer, size_t buffer_size) {
 
   return 0;
 }
+
 
 int main() {
   int server_fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -109,8 +114,9 @@ int main() {
     }
     else {
       enum ServerMode mode;
+      int running = 1;
 
-      while (1) {
+      while (running) {
         char message[2048] = {0};
         int message_len = recv(new_socket, message, sizeof(message), 0);
 
@@ -127,7 +133,7 @@ int main() {
         
         printf("%u\n", header.type);
 
-        switch (header.type) {
+        switch ((enum PacketType)header.type) {
           case PACKET_INIT: {
             PacketInit packet;
             packet_parse_init(message, message_len, &packet);
@@ -160,7 +166,8 @@ int main() {
               case SERVER_MODE_ECHO: {
                 printf("ECHO: %s\n", request.request);
 
-                if (strcmp(request.request, "close")) {
+                if (strcmp(request.request, "close") == 0) {
+                  printf("closing\n");
                   break;
                 }
 
@@ -179,7 +186,7 @@ int main() {
                 file = fopen(full_path, "rb");
                 if (file == NULL) {
                   perror("Error opening file");
-                  return -1;
+                  break;
                 }
 
                 fseek(file, 0, SEEK_END);
@@ -190,7 +197,7 @@ int main() {
                 if (buffer == NULL) {
                   perror("Error allocating memory");
                   fclose(file);
-                  return -1;
+                  break;
                 }
 
                 fread(buffer, 1, file_length, file);
@@ -209,11 +216,14 @@ int main() {
                 break;
               }
             }
+            break;
           }
           default:
-            printf("Got bad packet\n");
+            printf("Got bad packet type %d\n", header.type);
         } // packet switch
       } // child while
+
+      printf("closing child socket");
 
       close(new_socket);
       return EXIT_SUCCESS;

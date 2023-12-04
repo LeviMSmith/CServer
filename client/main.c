@@ -21,19 +21,26 @@ void echo(int socket, const char* input) {
 
   packet_serialize_header(message, &packet_header);
   packet_serialize_request(message, &packet_request);
-
+  
   int n = send(socket, message, MAX_TOTAL_PACKET_SIZE, 0);
   if (n < 0) {
     perror("ERROR writing to socket");
   }
 
   int message_len = recv(socket, message, sizeof(message), 0);
-  if (message_len > 0) {
-    PacketData packet_data;
-
-    packet_parse_data(message, message_len, &packet_data);
-    printf("ECHO recieved: %s", packet_data.data);
+  if (message_len == -1) {
+    perror("recv");
+    return;
   }
+  else if (message_len == 0) {
+    printf("Server disconnected\n");
+    return;
+  }
+
+  PacketData packet_data;
+
+  packet_parse_data(message, message_len, &packet_data);
+  printf("ECHO recieved: %s\n", packet_data.data);
 }
 
 void get_file(int socket, const char* input) {
@@ -62,6 +69,8 @@ int main() {
     return(EXIT_FAILURE);
   }
 
+  int socket = sockfd;
+
   char message[MAX_TOTAL_PACKET_SIZE];
 
   PacketHeader header;
@@ -71,7 +80,6 @@ int main() {
 
   enum ServerMode mode;
   char input[256];
-  bool running = true;
 
   printf("Choose a mode:\n");
   printf("1: Echo\n");
@@ -95,32 +103,36 @@ int main() {
 
   packet_serialize_init(message, &packet_init);
 
-  int n = send(sockfd, message, MAX_TOTAL_PACKET_SIZE, 0);
+  int n = send(socket, message, MAX_TOTAL_PACKET_SIZE, 0);
   if (n < 0) {
     perror("ERROR writing to socket");
     close(sockfd);
     return EXIT_FAILURE;
   }
 
-  int message_len = recv(sockfd, message, sizeof(message), 0);
+  int message_len = recv(socket, message, sizeof(message), 0);
 
   packet_parse_header(message, message_len, &header);
 
+  int running = 1;
+  // printf("%b", running);
   while (running) {
     printf("Input: ");
     fgets(input, sizeof(input), stdin);
     input[strcspn(input, "\n")] = 0; // Remove newline character
 
     if (strcmp(input, "close") == 0) {
-      running = false;
+      running = 0;
     } else {
-      if (mode == 1) {
-        echo(sockfd, input);
-      } else if (mode == 2) {
-        get_file(sockfd, input);
+      if (mode == SERVER_MODE_ECHO) {
+        echo(socket, input);
+      } else if (mode == SERVER_MODE_FILE) {
+        get_file(socket, input);
       }
     }
   }
+
+  printf("exiting");
 
   close(sockfd);
 
