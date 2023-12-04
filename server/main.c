@@ -130,20 +130,25 @@ int main() {
             packet_parse_request(message, message_len, &request);
 
             switch (mode) {
-              case SERVER_MODE_ECHO:
-                printf("ECHO: %s", request.request);
+              case SERVER_MODE_ECHO: {
+                printf("ECHO: %s\n", request.request);
                 if (strcmp(request.request, "close")) {
                   break;
                 }
-              case SERVER_MODE_FILE:
+                break;
+              }
+              case SERVER_MODE_FILE: {
                 printf("Got valid request for session %s\n", header.session);
                 break;
-              default:
+              }
+              default: {
+                printf("Got bad server mode\n");
                 break;
+              }
             }
           }
           default:
-            printf(stderr, "Got bad packet");
+            printf("Got bad packet\n");
         } // packet switch
       } // child while
 
