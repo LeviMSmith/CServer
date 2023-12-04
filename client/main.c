@@ -46,7 +46,7 @@ int main() {
 
   packet_serialize_init(message, &init);
 
-  int n = send(sockfd, message, strlen(message), 0);
+  int n = send(sockfd, message, MAX_TOTAL_PACKET_SIZE, 0);
   if (n < 0) {
     perror("ERROR writing to socket");
     close(sockfd);
@@ -60,7 +60,21 @@ int main() {
   char session[UUID4_LEN];
   strcpy(session, header.session);
 
-  printf("Got session %s", session);
+  printf("Got session %s\n", session);
+
+  PacketRequest request;
+  strcpy(request.request, "hello");
+
+  // session is still set
+  header.type = PACKET_REQUEST;
+
+  packet_serialize_header(message, &header);
+  packet_serialize_request(message, &request);
+
+  n = send(sockfd, message, MAX_TOTAL_PACKET_SIZE, 0);
+  if (n < 0) {
+    perror("ERROR writing to socket");
+  }
 
   close(sockfd);
 

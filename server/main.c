@@ -77,62 +77,69 @@ int main() {
       continue;
     }
 
-    char message[2048] = {0};
-    int message_len = recv(new_socket, message, sizeof(message), 0);
+    while (1) {
+      char message[2048] = {0};
+      int message_len = recv(new_socket, message, sizeof(message), 0);
 
-    PacketHeader header;
-    packet_parse_header(message, message_len, &header);
-    
-    printf("%s\n", header.session);
-    printf("%u\n", header.type);
+      PacketHeader header;
+      packet_parse_header(message, message_len, &header);
+      
+      printf("%s\n", header.session);
+      printf("%u\n", header.type);
 
-    switch (header.type) {
-      case PACKET_INIT: {
-        PacketInit packet;
-        packet_parse_init(message, message_len, &packet);
+      switch (header.type) {
+        case PACKET_INIT: {
+          PacketInit packet;
+          packet_parse_init(message, message_len, &packet);
 
-        char return_message[MAX_TOTAL_PACKET_SIZE];
-        PacketHeader header;
-        uuid4_generate(header.session);
-        header.type = PACKET_INIT;
+          char return_message[MAX_TOTAL_PACKET_SIZE];
+          PacketHeader header;
+          uuid4_generate(header.session);
+          header.type = PACKET_INIT;
 
-        packet_serialize_header(return_message, &header);
+          packet_serialize_header(return_message, &header);
 
-        PacketInit given_init;
-        packet_parse_init(message, message_len, &given_init);
+          PacketInit given_init;
+          packet_parse_init(message, message_len, &given_init);
 
-        PacketInit return_init;
-        return_init.mode = given_init.mode;
-        
-        g_hash_table_insert(sessions, header.session, GINT_TO_POINTER(return_init.mode));
+          PacketInit return_init;
+          return_init.mode = given_init.mode;
+          
+          g_hash_table_insert(sessions, header.session, GINT_TO_POINTER(return_init.mode));
 
-        packet_serialize_init(return_message, &return_init);
+          packet_serialize_init(return_message, &return_init);
 
-        send(new_socket, return_message, sizeof(PacketHeader) + sizeof(PacketInit), 0);
-        
-        break;
-      }
-      case PACKET_REQUEST: {
-        PacketRequest request;
-        packet_parse_request(message, message_len, &request);
-
-        int lookup_int;
-        gpointer lookup_result = g_hash_table_lookup(sessions, header.session);
-        if (lookup_result != NULL) {
-          lookup_int = GPOINTER_TO_INT(lookup_result);
-          switch (lookup_int) {
-            case SERVER_MODE_ECHO:
-            case SERVER_MODE_FILE:
-              printf("Got valid request for session %s\n", header.session);
-              break;
-            default:
-              break;
-          }
-          // Parse request and execute
-        }
-        else {
+          send(new_socket, return_message, sizeof(PacketHeader) + sizeof(PacketInit), 0);
+          
           break;
         }
+        case PACKET_REQUEST: {
+          PacketRequest request;
+          packet_parse_request(message, message_len, &request);
+
+          int lookup_int;
+          gpointer lookup_result = g_hash_table_lookup(sessions, header.session);
+          if (lookup_result != NULL) {
+            lookup_int = GPOINTER_TO_INT(lookup_result);
+            switch (lookup_int) {
+              case SERVER_MODE_ECHO:
+                printf("ECHO: %s", request.request);
+                if (strcmp(request.request, "close")) {
+                  break;
+                }
+              case SERVER_MODE_FILE:
+                printf("Got valid request for session %s\n", header.session);
+                break;
+              default:
+                break;
+            }
+          }
+          else {
+            break;
+          }
+        }
+        default:
+          printf(stderr, "Got bad packet");
       }
     }
 
