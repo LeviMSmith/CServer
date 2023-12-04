@@ -35,7 +35,6 @@ int main() {
 
   PacketHeader header;
   header.type = PACKET_INIT;
-  // Doesn't matter what's in header.session
 
   packet_serialize_header(message, &header);
 

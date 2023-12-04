@@ -1,23 +1,24 @@
 #ifndef PACKETS_H_
 #define PACKETS_H_
 
-#include "uuid4/uuid4.h"
-
 #include <stddef.h>
 #include <stdint.h>
 
 enum PacketType: uint8_t {
-  PACKET_INIT = 1,
+  PACKET_NONE,
+  PACKET_INIT,
   PACKET_REQUEST,
   PACKET_DATA
 };
 
 enum ServerMode: uint8_t {
-  SERVER_MODE_ECHO = 1,
+  SERVER_MODE_NONE,
+  SERVER_MODE_ECHO,
   SERVER_MODE_FILE
 };
 
-extern size_t MAX_TOTAL_PACKET_SIZE; // For buffers. It's much less than this.
+#define MAX_TOTAL_PACKET_SIZE 2024
+#define MAX_DATA_SIZE 1024
 
 typedef struct {
   enum PacketType type;
@@ -37,7 +38,7 @@ typedef struct {
 typedef struct {
   uint64_t segment;
   uint16_t data_len;
-  uint8_t data[1024];
+  char data[MAX_DATA_SIZE];
 } PacketData;
 
 int packet_parse_header(const char* message, int message_len, PacketHeader* packet);

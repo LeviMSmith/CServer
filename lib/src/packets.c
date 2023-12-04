@@ -4,8 +4,6 @@
 #include <string.h>
 #include <stdint.h>
 
-size_t MAX_TOTAL_PACKET_SIZE = 2048;
-
 uint64_t ntohll(uint64_t netlonglong) {
     uint32_t high_part = (uint32_t)(netlonglong >> 32);
     uint32_t low_part = (uint32_t)(netlonglong & 0xFFFFFFFF);

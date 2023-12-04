@@ -26,6 +26,39 @@
 
 const uint16_t PORT = 4000;
 
+int send_buffer(int socket, const char* buffer, size_t buffer_size) {
+  PacketData packet_data;
+  PacketHeader packet_header;
+  char packet[MAX_TOTAL_PACKET_SIZE];
+  size_t remaining = buffer_size;
+  uint64_t segment = 0;
+
+  while (remaining > 0) {
+    size_t chunk_size = remaining > MAX_DATA_SIZE ? MAX_DATA_SIZE : remaining;
+
+    packet_data.segment = segment;
+    packet_data.data_len = chunk_size;
+    strncpy(packet_data.data, (char *)buffer + (buffer_size - remaining), chunk_size);
+
+    packet_header.type = PACKET_DATA;
+
+    packet_serialize_header(packet, &packet_header);
+    packet_serialize_data(packet, &packet_data);
+
+    // Send packet
+    ssize_t sent = send(socket, packet, sizeof(PacketHeader) + 1 + sizeof(uint64_t) + sizeof(uint16_t) + chunk_size, 0);
+    if (sent == -1) {
+      perror("send");
+      return -1;
+    }
+
+    remaining -= chunk_size;
+    segment++;
+  }
+
+  return 0;
+}
+
 int main() {
   int server_fd = socket(AF_INET, SOCK_STREAM, 0);
   if (server_fd < 0) {
@@ -54,8 +87,6 @@ int main() {
     perror("listen");
     return EXIT_FAILURE;
   }
-
-  uuid4_init();
 
   while (1) {
     int new_socket;
@@ -128,12 +159,49 @@ int main() {
             switch (mode) {
               case SERVER_MODE_ECHO: {
                 printf("ECHO: %s\n", request.request);
+
                 if (strcmp(request.request, "close")) {
                   break;
                 }
+
+                send_buffer(new_socket, request.request, strlen(request.request));
+
                 break;
               }
               case SERVER_MODE_FILE: {
+                char full_path[1024];
+                FILE* file;
+                char* buffer;
+                size_t file_length;
+
+                snprintf(full_path, sizeof(full_path), "%s/%s", "public", request.request);
+
+                file = fopen(full_path, "rb");
+                if (file == NULL) {
+                  perror("Error opening file");
+                  return NULL;
+                }
+
+                fseek(file, 0, SEEK_END);
+                file_length = ftell(file);
+                rewind(file);
+
+                buffer = malloc(file_length + 1);
+                if (buffer == NULL) {
+                  perror("Error allocating memory");
+                  fclose(file);
+                  return NULL;
+                }
+
+                fread(buffer, 1, file_length, file);
+                buffer[file_length] = '\0';
+
+                fclose(file);
+
+                send_buffer(new_socket, buffer, file_length + 1);
+
+                free(buffer);
+
                 break;
               }
               default: {

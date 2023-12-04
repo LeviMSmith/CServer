@@ -12,15 +12,11 @@ LIB_SOURCE_DIR := lib/src
 LIB_INCLUDE := lib/include
 LIB_BUILD := $(BUILD_DIR)/lib
 
-UUID4_DIR := vendor/uuid4
-UUID4_LIB := $(UUID4_DIR)/bin/uuid4.a
-UUID4_INCLUDE := $(UUID4_DIR)/include
-
 .PHONY: all
 all: $(SERVER_BIN) $(CLIENT_BIN)
 
 CC := gcc
-CFLAGS := -MMD -Wall -g -I$(LIB_INCLUDE) -I$(UUID4_INCLUDE)
+CFLAGS := -MMD -Wall -g -I$(LIB_INCLUDE)
 
 
 # Utils lib that both server and client use
@@ -34,16 +30,12 @@ $(LIB_OBJECTS): $(LIB_BUILD)/%.o: $(LIB_SOURCE_DIR)/%.c
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -c $< -o $@
 
-# UUID4
-$(UUID4_LIB):
-	@make -C $(UUID4_DIR)
-
 # The server program
 SERVER_SOURCE_DIR := server
 SERVER_SOURCES := $(shell find $(SERVER_SOURCE_DIR) -type f -name "*.c")
 SERVER_OBJECTS := $(patsubst $(SERVER_SOURCE_DIR)/%.c,$(SERVER_BUILD)/%.o,$(SERVER_SOURCES))
 
-$(SERVER_BIN): $(SERVER_OBJECTS) $(LIB_BIN) $(UUID4_LIB) | $(BIN_DIR)
+$(SERVER_BIN): $(SERVER_OBJECTS) $(LIB_BIN) | $(BIN_DIR)
 	$(CC) $^ -o $@
 
 $(SERVER_OBJECTS): $(SERVER_BUILD)/%.o: $(SERVER_SOURCE_DIR)/%.c
@@ -55,7 +47,7 @@ CLIENT_SOURCE_DIR := client
 CLIENT_SOURCES := $(shell find $(CLIENT_SOURCE_DIR) -type f -name "*.c")
 CLIENT_OBJECTS := $(patsubst $(CLIENT_SOURCE_DIR)/%.c,$(CLIENT_BUILD)/%.o,$(CLIENT_SOURCES))
 
-$(CLIENT_BIN): $(CLIENT_OBJECTS) $(LIB_BIN) $(UUID4_LIB) | $(BIN_DIR)
+$(CLIENT_BIN): $(CLIENT_OBJECTS) $(LIB_BIN) | $(BIN_DIR)
 	$(CC) $(LFLAGS) $^ -o $@
 
 $(CLIENT_OBJECTS): $(CLIENT_BUILD)/%.o: $(CLIENT_SOURCE_DIR)/%.c
