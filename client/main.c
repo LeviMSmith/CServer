@@ -50,7 +50,43 @@ void echo(int socket, const char* input) {
 }
 
 void get_file(int socket, const char* input) {
+  char message[MAX_TOTAL_PACKET_SIZE] = {0};
 
+  PacketHeader packet_header;
+  PacketRequest packet_request;
+  strcpy(packet_request.request, input);
+
+  packet_header.type = PACKET_REQUEST;
+
+  packet_serialize_header(message, &packet_header);
+  packet_serialize_request(message, &packet_request);
+  
+  int n = send(socket, message, MAX_TOTAL_PACKET_SIZE, 0);
+  if (n < 0) {
+    perror("ERROR writing to socket");
+  }
+
+  FILE *file = fopen(input, "wb");
+  if (file == NULL) {
+    perror("Error opening file");
+    return;
+  }
+
+  ssize_t bytes_received;
+  PacketData packet_data;
+  while ((bytes_received = recv(socket, &packet_data, sizeof(packet_data), 0)) > 0) {
+    if (packet_data.segment == UINT64_MAX) {
+      break;
+    }
+    
+    fwrite(packet_data.data, 1, packet_data.data_len, file);
+  }
+
+  if (bytes_received < 0) {
+    perror("Error receiving file data");
+  }
+
+  fclose(file);
 }
 
 int main() {

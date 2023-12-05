@@ -50,6 +50,10 @@ int send_buffer(int socket, const char* buffer, size_t buffer_size) {
     segment++;
   }
 
+  packet_data.segment = UINT64_MAX;
+  packet_serialize_data(packet, &packet_data);
+  send(socket, packet, sizeof(packet), 0);
+
   return 0;
 }
 
